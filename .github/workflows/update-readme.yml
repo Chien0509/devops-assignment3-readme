@@ -1,0 +1,54 @@
+name: Auto-Update README Activity
+
+on:
+  push:
+    branches:
+      - main # 當有程式碼推送到 main 分支時觸發
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+          # 這裡使用您在 Secrets 中設定的最小權限 PAT
+          token: ${{ secrets.REPO_TOKEN }} 
+
+      - name: Fetch Recent Commits
+        run: |
+          # 抓取最新的 3 筆 Commit，格式為: - hash: message (author)
+          COMMITS=$(git log -3 --pretty=format:"- %h: %s (%an)")
+          echo "COMMITS<<EOF" >> $GITHUB_ENV
+          echo "$COMMITS" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Update README content
+        run: |
+          # 使用 awk 替換 <!-- START_RECENT_ACTIVITY --> 與 <!-- END_RECENT_ACTIVITY --> 之間的內容
+          awk -v commits="$COMMITS" '
+          /<!-- START_RECENT_ACTIVITY -->/ {
+            print
+            print ""
+            print commits
+            print ""
+            skip = 1
+            next
+          }
+          /<!-- END_RECENT_ACTIVITY -->/ {
+            skip = 0
+          }
+          !skip { print }
+          ' README.md > temp_readme.md
+          mv temp_readme.md README.md
+
+      - name: Commit and Push changes
+        run: |
+          # 設定 Git 使用者資訊
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          
+          # 冪等性檢查 (Idempotency): 如果 README 沒有變更，則不執行 commit，避免無窮迴圈報錯
+          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: auto-update recent activity" && git push)
