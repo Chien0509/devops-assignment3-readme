@@ -4,8 +4,8 @@
 
 <!-- START_RECENT_ACTIVITY -->
 
-- 2523f09: docs: auto-update recent activity (github-actions[bot])
-- e50eeab: docs: auto-update recent activity (github-actions[bot])
-- 5ff6bfd: docs: auto-update recent activity (github-actions[bot])
+- 07937c6: Improve comments in update-readme workflow (Chien0509)
+- 563cf66: Exclude bot account from triggering update-readme job (Chien0509)
+- 3b8ef5f: docs: auto-update recent activity (github-actions[bot])
 
 <!-- END_RECENT_ACTIVITY -->
