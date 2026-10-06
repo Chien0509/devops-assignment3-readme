@@ -3,11 +3,14 @@ name: Auto-Update README Activity
 on:
   push:
     branches:
-      - main # 當有程式碼推送到 main 分支時觸發
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   update-readme:
-    # 【關鍵防護】排除 bot 帳號的觸發，防止無限迴圈
+    # 阻斷無限迴圈：機器人自己觸發的更新直接跳過
     if: github.actor != 'github-actions[bot]'  
     runs-on: ubuntu-latest
     steps:
@@ -15,12 +18,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 5
-          # 使用您在 Secrets 中設定的最小權限 PAT
           token: ${{ secrets.REPO_TOKEN }} 
 
       - name: Fetch Recent Commits
         run: |
-          # 抓取最新的 3 筆 Commit，格式為: - hash: message (author)
           COMMITS=$(git log -3 --pretty=format:"- %h: %s (%an)")
           echo "COMMITS<<EOF" >> $GITHUB_ENV
           echo "$COMMITS" >> $GITHUB_ENV
@@ -28,7 +29,6 @@ jobs:
 
       - name: Update README content
         run: |
-          # 使用 awk 替換 <!-- START_RECENT_ACTIVITY --> 與 <!-- END_RECENT_ACTIVITY --> 之間的內容
           awk -v commits="$COMMITS" '
           /<!-- START_RECENT_ACTIVITY -->/ {
             print
@@ -47,10 +47,14 @@ jobs:
 
       - name: Commit and Push changes
         run: |
-          # 設定 Git 使用者資訊
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add README.md
+          git diff --quiet && git diff --staged --quiet || git commit -m "docs: auto-update recent activity"
           
-          # 冪等性檢查 (Idempotency): 如果 README 沒有變更，則不執行 commit
-          git diff --quiet && git diff --staged --quiet || (git commit -m "docs: auto-update recent activity" && git push)
+          # 智慧判斷：如果是 push 就推播更新；如果是 PR 就只測試不推播，避免報錯
+          if [ "${{ github.event_name }}" == "push" ]; then
+            git push
+          else
+            echo "此為 Pull Request 階段，僅進行預覽與測試，跳過 git push 以免產生錯誤。"
+          fi
