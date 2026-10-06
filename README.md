@@ -4,8 +4,8 @@
 
 <!-- START_RECENT_ACTIVITY -->
 
+- 20a8b99: docs: auto-update recent activity (github-actions[bot])
 - dae61f8: docs: auto-update recent activity (github-actions[bot])
 - 806ca65: docs: auto-update recent activity (github-actions[bot])
-- 3bab757: docs: auto-update recent activity (github-actions[bot])
 
 <!-- END_RECENT_ACTIVITY -->
